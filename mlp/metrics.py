@@ -30,50 +30,30 @@ class metric:
 
 
 class accuracy(metric):
-    """
-    Accuracy
-
-    """
-
     def __call__(self, y_true, y_pred):
         return np.sum(y_pred == y_true) / y_true.shape[0]
 
 
 class precision(metric):
-    """
-    Precision
-
-    """
-
     def __call__(self, y_true, y_pred):
         pass
 
 
-class recall(metric):
-    """
-    Recall
+class sensitivity(metric):
+    def __call__(self, y_true, y_pred):
+        pass
 
-    """
 
+class sensitivity(metric):
     def __call__(self, y_true, y_pred):
         pass
 
 
 class f1(metric):
-    """
-    F1 score
-
-    """
-
     def __call__(self, y_true, y_pred):
         pass
 
 
 class kappa(metric):
-    """
-    Kappa coefficient
-
-    """
-
     def __call__(self, y_true, y_pred):
         pass
