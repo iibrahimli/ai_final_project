@@ -148,8 +148,8 @@ class network:
         output_act = self.activations[self.n_layers - 1]
 
         # determine partial derivative and delta for the input of output activation function (output_z)
-        if isinstance(output_act, softmax):
-            delta = output_act.delta(output_z, output_a, y_true)
+        if True:
+            delta = self.loss.delta(y_true, output_a)
         else:
             delta = self.loss.backward(y_true, output_a) * output_act.backward(output_z, output_a)
         dw = np.dot(self.a[self.n_layers - 2].T, delta)
