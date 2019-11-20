@@ -49,6 +49,12 @@ class cost:
         """
         raise NotImplementedError(f"{self.__class__.__name__}.backward() not implemented")
 
+    def delta(self, y_true, y_pred):
+        """
+        Calculates the gradient of cost wrt inputs of the output activation function
+        """
+        raise NotImplementedError(f"{self.__class__.__name__}.delta() not implemented")
+
 
 # activation
 
@@ -108,11 +114,6 @@ class softmax(activation):
         def grad(a):
             return np.diag(a) - np.outer(a, a)
         return np.array([grad(row) for row in a])
-    
-
-    def delta(self, z, a, y_true):
-        """Returns error of cross entropy wrt the input of softmax"""
-        return (1 / y_true.shape[0]) * (a - y_true)
 
 
 # cost
@@ -126,6 +127,9 @@ class mean_squared_error(cost):
 
 
 class categorical_crossentropy(cost):
+    """
+    Assumes that its input is softmaxed
+    """
     def forward(self, y_true, y_pred):
         def cce(y_true, y_pred):
             # efficient, but assumes y is one-hot
@@ -134,12 +138,22 @@ class categorical_crossentropy(cost):
 
     def backward(self, y_true, y_pred):
         return -(1 / y_true.shape[0]) * (y_true / (y_pred + _epsilon))
+    
+    def delta(self, y_true, y_pred):
+        """Gradient wrt input of output activation function"""
+        return (1 / y_true.shape[0]) * (y_pred - y_true)
 
 
 class binary_crossentropy(cost):
-    pass
-    # def forward(self, y_true, y_pred):
-    #     pass
+    """
+    Assumes that its input is sigmoided
+    """
+    def forward(self, y_true, y_pred):
+        return -np.mean(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
 
-    # def backward(self, y_true, y_pred):
-        # pass
+    def backward(self, y_true, y_pred):
+        raise NotImplementedError("BCE backward not implemented")
+ 
+    def delta(self, y_true, y_pred):
+        """Gradient wrt input of output activation function"""
+        return y_pred - y_true
