@@ -231,6 +231,7 @@ class network:
             x_val, y_val     = x[:idx], y[:idx]
             print(f"Train on {x_train.shape[0]} samples, validate on {x_val.shape[0]} samples for {n_epochs} epochs")
         else:
+            x_train, y_train = x, y
             print(f"Train on {x_train.shape[0]} samples for {n_epochs} epochs")
 
         for e in range(n_epochs):
