@@ -148,17 +148,13 @@ class network:
         output_act = self.activations[self.n_layers - 1]
 
         # determine partial derivative and delta for the input of output activation function (output_z)
-        if True:
-            delta = self.loss.delta(y_true, output_a)
-        else:
-            delta = self.loss.backward(y_true, output_a) * output_act.backward(output_z, output_a)
+        delta = self.loss.delta(y_true, output_a)
+        # delta = self.loss.backward(y_true, output_a) * output_act.backward(output_z, output_a)
         dw = np.dot(self.a[self.n_layers - 2].T, delta)
 
         update = {
             self.n_layers - 1: (dw, delta)
         }
-
-        # delta = np.dot(delta, self.w[self.n_layers-1].T)
 
         # each iteration requires the delta from the "higher" layer, propagating backwards.
         for i in reversed(range(1, self.n_layers - 1)):
@@ -286,10 +282,16 @@ class network:
 
             width = len(str(n_epochs))
             if print_stats and e % print_stats == 0:
-                print(f"epoch {e:<{width}}/{n_epochs}:  train_loss: {train_loss:.4f}  val_loss: {val_loss:.4f}  ", end='')
+                if val_ratio or val_data:
+                    print(f"epoch {e:<{width}}/{n_epochs}:  train_loss: {train_loss:.4f}  val_loss: {val_loss:.4f}  ", end='')
+                else:
+                    print(f"epoch {e:<{width}}/{n_epochs}:  train_loss: {train_loss:.4f}  ", end='')
                 for m in metrics:
                     m_name = m.__class__.__name__
-                    print(f"train_{m_name}: {history[f'train_{m_name}'][-1]:.4f}  val_{m_name}: {history[f'val_{m_name}'][-1]:.4f}  ", end='')
+                    if val_ratio or val_data:
+                        print(f"train_{m_name}: {history[f'train_{m_name}'][-1]:.4f}  val_{m_name}: {history[f'val_{m_name}'][-1]:.4f}  ", end='')
+                    else:
+                        print(f"train_{m_name}: {history[f'train_{m_name}'][-1]:.4f}  ", end='')
                 print(f"{millis:.2f} ms/epoch")
 
         return history
