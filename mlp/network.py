@@ -169,7 +169,7 @@ class network:
         self._update_params(update)
 
 
-    def fit(self, x, y, lr, n_epochs, batch_size, shuffle_data=True, val_ratio=None, metrics=None, print_stats=100):
+    def fit(self, x, y, lr, n_epochs, batch_size, shuffle_data=True, val_ratio=None, val_data=None, metrics=None, print_stats=100):
         """
         Train the multilayer perceptron on the training set
 
@@ -186,6 +186,9 @@ class network:
                 default: True
 
             val_ratio (float): If provided, a fraction of data is used for validation
+                default: None
+            
+            val_data (tuple of arrays): Data to be used as validation set
                 default: None
             
             metrics (list of metric): Metric functions to compute every epoch
@@ -230,6 +233,9 @@ class network:
             x_train, y_train = x[idx:], y[idx:]
             x_val, y_val     = x[:idx], y[:idx]
             print(f"Train on {x_train.shape[0]} samples, validate on {x_val.shape[0]} samples for {n_epochs} epochs")
+        elif val_data:
+            x_train, y_train = x, y
+            x_val, y_val = val_data[0], val_data[1]
         else:
             x_train, y_train = x, y
             print(f"Train on {x_train.shape[0]} samples for {n_epochs} epochs")
@@ -263,7 +269,7 @@ class network:
                 y_train_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
                 history[f'train_{m_name}'].append(m(y_train_int, y_train_pred_int))
 
-            if val_ratio:
+            if val_ratio or val_data:
                 # compute loss for the validation set
                 self._forward(x_val)
                 val_loss = self.loss.forward(y_val, self.a[self.n_layers - 1])
