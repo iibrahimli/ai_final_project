@@ -65,6 +65,7 @@ class network:
             self.w[i] = np.random.normal(loc=0.0,
                                          scale=1.0 / np.sqrt(self.n_neurons[i]),
                                          size=(self.n_neurons[i-1], self.n_neurons[i]))
+            # self.w[i] = np.random.random(size=(self.n_neurons[i-1], self.n_neurons[i]))
             self.b[i] = np.zeros(shape=(self.n_neurons[i]))
         
         # intermediate values
@@ -261,8 +262,10 @@ class network:
             # compute metrics for the validation set
             for m in metrics:
                 m_name = m.__class__.__name__
-                y_train_int = np.argmax(y_train, axis=1)
-                y_train_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
+                # y_train_int = np.argmax(y_train, axis=1)
+                y_train_int = y_train
+                # y_train_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
+                y_train_pred_int = (self.a[self.n_layers - 1] > 0.5).astype(int)
                 history[f'train_{m_name}'].append(m(y_train_int, y_train_pred_int))
 
             if val_ratio or val_data:
@@ -274,8 +277,10 @@ class network:
                 # compute metrics for the validation set
                 for m in metrics:
                     m_name = m.__class__.__name__
-                    y_val_int = np.argmax(y_val, axis=1)
-                    y_val_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
+                    # y_val_int = np.argmax(y_val, axis=1)
+                    y_val_int = y_val
+                    # y_val_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
+                    y_val_pred_int = (self.a[self.n_layers - 1] > 0.5).astype(int)
                     history[f'val_{m_name}'].append(m(y_val_int, y_val_pred_int))
 
             millis = (time.perf_counter() - t1) * 1_000
