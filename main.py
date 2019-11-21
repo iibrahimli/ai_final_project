@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from mlp import data, functions, metrics, network
 
-np.random.seed(1337)
+np.random.seed(1)
 
 
 # importing the dataset
@@ -70,24 +71,38 @@ Chapter 2
 net = network.network(
     [x_train.shape[1], 5, 1],
     [
-        functions.tanh(),
+        functions.relu(),
         functions.sigmoid()
     ],
     functions.binary_crossentropy()
 )
 
 
+################################################
+################################################
+########                         ###############
+########      TODO               ###############
+########                         ###############
+########     Early Stopping      ###############
+########                         ###############
+################################################
+################################################
+
 # training
 history = net.fit(
     x_train, y_train,
-    lr=(0.01, 750, 0.5),             # learning rate annealing
-    n_epochs=100,
+    lr=(0.01, 50, 0.5),           # learning rate annealing
+    n_epochs=300,
     batch_size=4,
-    # val_data=(x_test, y_test),
-    metrics=[metrics.accuracy()],    # evaluate accuracy for each epoch
-    print_stats=250
+    val_data=(x_test, y_test),
+    metrics=[
+        metrics.accuracy(),
+        metrics.sensitivity(),
+        metrics.specificity(),
+        metrics.f1()
+    ],
+    print_stats=1
 )
-
 
 # evaluation
 """
@@ -98,7 +113,13 @@ history = net.fit(
 """
 
 # convert one-hot labels to integer labels
-y_test_pred = (net.predict(x_test) > 0.5).astype(int)
+y_test_hat = net.predict(x_test)
+y_test_pred = (y_test_hat > 0.5).astype(int)
+
+
+# for y_true, y_hat in zip(y_test, y_test_hat):
+    # print(f"{y_true[0]:.4f}  -  {y_hat[0]:.4f}")
+# exit(0)
 
 
 # calculate metrics
@@ -106,6 +127,7 @@ test_acc  = metrics.accuracy()(y_test, y_test_pred)
 test_prec = metrics.precision()(y_test, y_test_pred)
 test_sens = metrics.sensitivity()(y_test, y_test_pred)
 test_spec = metrics.specificity()(y_test, y_test_pred)
+test_f1   = metrics.f1()(y_test, y_test_pred)
 
 print()
 print("----------")
@@ -114,21 +136,19 @@ print(f"accuracy:    { test_acc:.3f}")
 print(f"precision:   {test_prec:.3f}")
 print(f"sensitivity: {test_sens:.3f}")
 print(f"specificity: {test_spec:.3f}")
+print(f"f1:          {test_f1:.3f}")
 
 
 # plot training stats
-# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+n_plots = len(history)
+fig, axs = plt.subplots(1, n_plots)
 
-# ax1.plot(history['train_loss'], label='train_loss')
-# ax1.plot(history['val_loss'], label='val_loss')
-# ax1.legend()
-# ax1.set_xlabel('epochs')
-# ax1.set_ylabel('loss')
+for i, m in enumerate(history.keys()):
+    axs[i].plot(history[m]['train'], label=f'train_{m}')
+    axs[i].plot(history[m]['val'], label=f'val_{m}')
+    axs[i].legend()
+    axs[i].set_xlabel('epochs')
+    axs[i].set_ylabel(m)
 
-# ax2.plot(history['train_accuracy'], label='train_accuracy')
-# ax2.plot(history['val_accuracy'], label='val_accuracy')
-# ax2.legend()
-# ax2.set_xlabel('epochs')
-# ax2.set_ylabel('accuracy')
-
-# plt.show()
+plt.tight_layout()
+plt.show()
