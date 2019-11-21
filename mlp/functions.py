@@ -74,12 +74,12 @@ class leaky_relu(activation):
 
     def forward(self, z):
         y1 = ((z > 0) * z)
-        y2 = ((z <= 0) * z * alpha)
+        y2 = ((z <= 0) * z * self.alpha)
         return y1 + y2
 
     def backward(self, z, a):
         dz = np.ones_like(z)
-        dz[dz < 0] = alpha
+        dz[dz < 0] = self.alpha
         return dz
 
 
@@ -97,6 +97,14 @@ class sigmoid(activation):
 
     def backward(self, z, a):
         return a * (1 - a)
+
+
+class linear(activation):
+    def forward(self, z):
+        return z
+
+    def backward(self, z, a):
+        return 1
 
 
 class softmax(activation):
