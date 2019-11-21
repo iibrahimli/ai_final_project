@@ -195,8 +195,8 @@ class network:
                 default: 1
 
         Returns:
-            history (dict of list): value of loss over epochs.
-                Keys: 'loss' [, 'val_loss']
+            history (dict of dict of list): values of loss and metrics over epochs.
+                Keys: 'loss': {train, val}, etc
 
         """
 
@@ -215,15 +215,20 @@ class network:
             raise TypeError("lr must be one of float or tuple")
 
         history = {
-            'train_loss': [],
-            'val_loss': []
+            'loss': {
+                'train': [],
+                'val': []
+            }
         }
 
         if metrics:
             for m in metrics:
                 m_name = m.__class__.__name__
-                history[f'train_{m_name}'] = []
-                history[f'val_{m_name}'] =  []
+                history[m_name] = {
+                    'train': [],
+                    'val': []
+                }
+
 
         if val_ratio:
             idx = round(val_ratio * x.shape[0])
@@ -257,7 +262,7 @@ class network:
             # compute loss for the training set
             self._forward(x_train)
             train_loss = self.loss.forward(y_train, self.a[self.n_layers - 1])
-            history['train_loss'].append(train_loss)
+            history['loss']['train'].append(train_loss)
 
             # compute metrics for the validation set
             for m in metrics:
@@ -266,13 +271,13 @@ class network:
                 y_train_int = y_train
                 # y_train_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
                 y_train_pred_int = (self.a[self.n_layers - 1] > 0.5).astype(int)
-                history[f'train_{m_name}'].append(m(y_train_int, y_train_pred_int))
+                history[m_name]['train'].append(m(y_train_int, y_train_pred_int))
 
             if val_ratio or val_data:
                 # compute loss for the validation set
                 self._forward(x_val)
                 val_loss = self.loss.forward(y_val, self.a[self.n_layers - 1])
-                history['val_loss'].append(val_loss)
+                history['loss']['val'].append(val_loss)
 
                 # compute metrics for the validation set
                 for m in metrics:
@@ -281,7 +286,7 @@ class network:
                     y_val_int = y_val
                     # y_val_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
                     y_val_pred_int = (self.a[self.n_layers - 1] > 0.5).astype(int)
-                    history[f'val_{m_name}'].append(m(y_val_int, y_val_pred_int))
+                    history[m_name]['val'].append(m(y_val_int, y_val_pred_int))
 
             millis = (time.perf_counter() - t1) * 1_000
 
@@ -294,9 +299,9 @@ class network:
                 for m in metrics:
                     m_name = m.__class__.__name__
                     if val_ratio or val_data:
-                        print(f"train_{m_name}: {history[f'train_{m_name}'][-1]:.4f}  val_{m_name}: {history[f'val_{m_name}'][-1]:.4f}  ", end='')
+                        print(f"train_{m_name}: {history[m_name]['train'][-1]:.4f}  val_{m_name}: {history[m_name]['val'][-1]:.4f}  ", end='')
                     else:
-                        print(f"train_{m_name}: {history[f'train_{m_name}'][-1]:.4f}  ", end='')
+                        print(f"train_{m_name}: {history[m_name]['train'][-1]:.4f}  ", end='')
                 print(f"{millis:.2f} ms/epoch")
 
         return history
