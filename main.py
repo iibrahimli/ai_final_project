@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from mlp import data, functions, metrics, network
 
-np.random.seed(1)
+np.random.seed(25)
 
 
 # importing the dataset
@@ -19,9 +19,10 @@ Chapter 1
 """
 
 df = pd.read_csv("datasets/heart_disease.csv", sep=';')
-print(f"Number of features in the dataset: {df.shape[1]}")
 # print(df.info())
 # print(df.head())
+print(f"Data contains {(df['target'].values == 1).sum()} positives ({(df['target'].values == 1).sum() / len(df) * 100:.2f} %)")
+print(f"Number of features in the dataset: {df.shape[1]}")
 
 
 # preprocessing
@@ -78,16 +79,6 @@ net = network.network(
 )
 
 
-################################################
-################################################
-########                         ###############
-########      TODO               ###############
-########                         ###############
-########     Early Stopping      ###############
-########                         ###############
-################################################
-################################################
-
 # training
 history = net.fit(
     x_train, y_train,
@@ -95,6 +86,8 @@ history = net.fit(
     n_epochs=300,
     batch_size=4,
     val_data=(x_test, y_test),
+    es_epochs=10,
+    es_delta=1e-8,
     metrics=[
         metrics.accuracy(),
         metrics.sensitivity(),
@@ -112,7 +105,7 @@ history = net.fit(
       it is better to have the minimal number of 
 """
 
-# convert one-hot labels to integer labels
+# convert probabilities to integer labels
 y_test_hat = net.predict(x_test)
 y_test_pred = (y_test_hat > 0.5).astype(int)
 
