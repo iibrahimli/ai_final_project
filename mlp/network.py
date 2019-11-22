@@ -87,6 +87,7 @@ class network:
             raise ValueError("Invalid number of activation functions")
 
         self.loss = loss
+        self.prev_avg_loss = float('inf')
 
 
     def _forward(self, x):
@@ -166,7 +167,7 @@ class network:
         self._update_params(update)
 
 
-    def fit(self, x, y, lr, n_epochs, batch_size, shuffle_data=True, val_ratio=None, val_data=None, metrics=None, print_stats=100):
+    def fit(self, x, y, lr, n_epochs, batch_size, shuffle_data=True, val_ratio=None, val_data=None, es_epochs=None, es_delta=1e-5, metrics=None, print_stats=100):
         """
         Train the multilayer perceptron on the training set
 
@@ -188,6 +189,12 @@ class network:
             val_data (tuple of arrays): Data to be used as validation set
                 default: None
             
+            es_epochs (int): Number of epochs to watch the average loss for early stopping
+                default: None
+            
+            es_delta (float): Early stopping tolerance
+                default: 1e-5
+
             metrics (list of metric): Metric functions to compute every epoch
                 default: None
             
@@ -238,11 +245,16 @@ class network:
         elif val_data:
             x_train, y_train = x, y
             x_val, y_val = val_data[0], val_data[1]
+            print(f"Train on {x_train.shape[0]} samples, validate on {x_val.shape[0]} samples for {n_epochs} epochs")
         else:
             x_train, y_train = x, y
             print(f"Train on {x_train.shape[0]} samples for {n_epochs} epochs")
+        
+        print("Stats are printed in format train / val")
+
 
         for e in range(n_epochs):
+
             t1 = time.perf_counter()
 
             # lr annealing
@@ -293,15 +305,22 @@ class network:
             width = len(str(n_epochs))
             if print_stats and e % print_stats == 0:
                 if val_ratio or val_data:
-                    print(f"epoch {e:<{width}}/{n_epochs}:  train_loss: {train_loss:.4f}  val_loss: {val_loss:.4f}  ", end='')
+                    print(f"epoch {e:>{width}}/{n_epochs}:  loss: {train_loss:.4f} / {val_loss:.4f}  -  ", end='')
                 else:
-                    print(f"epoch {e:<{width}}/{n_epochs}:  train_loss: {train_loss:.4f}  ", end='')
+                    print(f"epoch {e:>{width}}/{n_epochs}:  loss: {train_loss:.4f}  -  ", end='')
                 for m in metrics:
                     m_name = m.__class__.__name__
                     if val_ratio or val_data:
-                        print(f"train_{m_name}: {history[m_name]['train'][-1]:.4f}  val_{m_name}: {history[m_name]['val'][-1]:.4f}  ", end='')
+                        print(f"{m_name}: {history[m_name]['train'][-1]:.4f} / {history[m_name]['val'][-1]:.4f}  -  ", end='')
                     else:
-                        print(f"train_{m_name}: {history[m_name]['train'][-1]:.4f}  ", end='')
+                        print(f"{m_name}: {history[m_name]['train'][-1]:.4f}  -  ", end='')
                 print(f"{millis:.2f} ms/epoch")
+            
+            if es_epochs and (val_ratio or val_data) and e >= es_epochs:
+                avg_loss = np.mean(history['loss']['val'][-es_epochs:])
+                if self.prev_avg_loss - avg_loss < 0.0001:
+                    print("early stopping")
+                    return history
+                self.prev_avg_loss = avg_loss
 
         return history
