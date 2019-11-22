@@ -38,7 +38,7 @@ class network:
 
     """
 
-    def __init__(self, layers, activation_funcs, loss):
+    def __init__(self, layers, activation_funcs):
         """
         Initialize a multilayer perceptron.
 
@@ -48,9 +48,6 @@ class network:
             
             activation_funcs (list of activation): Activation functions of each layer
                 Length must be 2 (hidden, output) or n_layers - 1
-            
-            loss (cost): Loss function to optimize
-                default: categorical_crossentropy
 
         """
 
@@ -86,7 +83,6 @@ class network:
         else:
             raise ValueError("Invalid number of activation functions")
 
-        self.loss = loss
         self.prev_avg_loss = float('inf')
 
 
@@ -167,12 +163,15 @@ class network:
         self._update_params(update)
 
 
-    def fit(self, x, y, lr, n_epochs, batch_size, shuffle_data=True, val_ratio=None, val_data=None, es_epochs=None, es_delta=1e-5, metrics=None, print_stats=100):
+    def fit(self, x, y, loss, lr, n_epochs, batch_size, shuffle_data=True, val_ratio=None, val_data=None, es_epochs=None, es_delta=1e-5, metrics=None, print_stats=100):
         """
         Train the multilayer perceptron on the training set
 
         Args:
             x, y (np.ndarray): Training data
+
+            loss (cost): Loss function to optimize
+                default: categorical_crossentropy
 
             lr (float or tuple): Learning rate or annealing schedule in form (initial lr, every_n_epochs, multiplier)
 
@@ -209,6 +208,8 @@ class network:
 
         if not x.shape[0] == y.shape[0]:
             raise ValueError("Length of x and y arrays don't match")
+        
+        self.loss = loss
         
         if isinstance(lr, tuple):
             self.lr = lr[0]
