@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from mlp import data, functions, metrics, network
 
 np.random.seed(25)
+show_plots = False
 
 
 # importing the dataset
@@ -74,16 +75,16 @@ net = network.network(
     [
         functions.relu(),
         functions.sigmoid()
-    ],
-    functions.binary_crossentropy()
+    ]
 )
 
 
 # training
 history = net.fit(
     x_train, y_train,
-    lr=(0.01, 50, 0.5),           # learning rate annealing
-    n_epochs=300,
+    loss=functions.binary_crossentropy(),
+    lr=(0.1, 100, 0.5),                  # learning rate annealing
+    n_epochs=500,
     batch_size=4,
     val_data=(x_test, y_test),
     es_epochs=10,
@@ -96,6 +97,7 @@ history = net.fit(
     ],
     print_stats=1
 )
+
 
 # evaluation
 """
@@ -133,15 +135,14 @@ print(f"f1:          {test_f1:.3f}")
 
 
 # plot training stats
-n_plots = len(history)
-fig, axs = plt.subplots(1, n_plots)
-
-for i, m in enumerate(history.keys()):
-    axs[i].plot(history[m]['train'], label=f'train_{m}')
-    axs[i].plot(history[m]['val'], label=f'val_{m}')
-    axs[i].legend()
-    axs[i].set_xlabel('epochs')
-    axs[i].set_ylabel(m)
-
-plt.tight_layout()
-plt.show()
+if show_plots:    
+    n_plots = len(history)
+    fig, axs = plt.subplots(1, n_plots)
+    for i, m in enumerate(history.keys()):
+        axs[i].plot(history[m]['train'], label=f'train_{m}')
+        axs[i].plot(history[m]['val'], label=f'val_{m}')
+        axs[i].legend()
+        axs[i].set_xlabel('epochs')
+        axs[i].set_ylabel(m)
+    plt.tight_layout()
+    plt.show()
