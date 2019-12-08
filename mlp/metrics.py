@@ -49,52 +49,40 @@ class metric:
 
 
 class accuracy(metric):
+    name = 'accuracy'
     def __call__(self, y_true, y_pred):
         return np.sum(y_pred == y_true) / y_true.shape[0]
 
 
 class precision(metric):
+    name = 'precision'
     def __call__(self, y_true, y_pred):
         tp, tn, fp, fn = tfpn(y_true, y_pred)
         return tp / (tp + fp)
 
 
 class sensitivity(metric):
+    name = 'sensitivity'
     def __call__(self, y_true, y_pred):
         tp, tn, fp, fn = tfpn(y_true, y_pred)
         return tp / (tp + fn)
 
 
 class specificity(metric):
+    name = 'specificity'
     def __call__(self, y_true, y_pred):
         tp, tn, fp, fn = tfpn(y_true, y_pred)
         return tn / (tn + fp)
 
 
 class f1(metric):
+    name = 'f1'
     def __call__(self, y_true, y_pred):
         tp, tn, fp, fn = tfpn(y_true, y_pred)
         return 2 * tp / (2 * tp + fp + fn)
 
 
 class kappa(metric):
+    name = 'kappa'
     def __call__(self, y_true, y_pred):
         pass
-
-
-def k_fold_cv(net, k, x, y):
-    """
-    K-fold cross-validation
-
-    Args:
-        net:   The network to test
-        k:     K (default: 5)
-        x, y:  The dataset
-    
-    Returns:
-        res:   Dict of metrics (averaged)
-
-    """
-
-    # TODO
-    pass
