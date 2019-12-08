@@ -85,7 +85,7 @@ net = network.network(
       it is better to have the minimal number of
 """
 
-# training
+# # training
 # history = net.fit(
 #     x_train, y_train,
 #     loss=functions.binary_crossentropy(),
@@ -105,7 +105,7 @@ net = network.network(
 # )
 
 
-# evaluation
+# # evaluation
 
 # # convert probabilities to integer labels
 # y_test_hat = net.predict(x_test)
@@ -159,7 +159,6 @@ print("Results of 5-fold cross validation:")
 print("----------")
 for k, v in res.items():
     print(f"{k+':':12} {v:.4f}")
-
 
 
 
