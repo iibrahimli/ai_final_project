@@ -58,7 +58,7 @@ class network:
         self.w = {}
         self.b = {}
         for i in range(1, self.n_layers):
-            # Xavier initialization: Gaussian with mean=0 and std=2/sqrt(n_input_neurons)
+            # Xavier initialization: Gaussian with mean=0 and std=1/sqrt(n_input_neurons)
             self.w[i] = np.random.normal(loc=0.0,
                                          scale=1.0 / np.sqrt(self.n_neurons[i]),
                                          size=(self.n_neurons[i-1], self.n_neurons[i]))
@@ -84,6 +84,21 @@ class network:
             raise ValueError("Invalid number of activation functions")
 
         self.prev_avg_loss = float('inf')
+    
+
+    def _reset_w_b(self):
+        """
+        Resets the weights and biases
+
+        """
+
+        for i in range(1, self.n_layers):
+            # Xavier initialization: Gaussian with mean=0 and std=1/sqrt(n_input_neurons)
+            self.w[i] = np.random.normal(loc=0.0,
+                                         scale=1.0 / np.sqrt(self.n_neurons[i]),
+                                         size=(self.n_neurons[i-1], self.n_neurons[i]))
+            # self.w[i] = np.random.random(size=(self.n_neurons[i-1], self.n_neurons[i]))
+            self.b[i] = np.zeros(shape=(self.n_neurons[i]))
 
 
     def _forward(self, x):
@@ -202,7 +217,7 @@ class network:
 
         Returns:
             history (dict of dict of list): values of loss and metrics over epochs.
-                Keys: 'loss': {train, val}, etc
+                Keys: 'metric_name': {'train', 'val'}
 
         """
 
@@ -231,7 +246,7 @@ class network:
 
         if metrics:
             for m in metrics:
-                m_name = m.__class__.__name__
+                m_name = m.name
                 history[m_name] = {
                     'train': [],
                     'val': []
@@ -242,16 +257,20 @@ class network:
             idx = round(val_ratio * x.shape[0])
             x_train, y_train = x[idx:], y[idx:]
             x_val, y_val     = x[:idx], y[:idx]
-            print(f"Train on {x_train.shape[0]} samples, validate on {x_val.shape[0]} samples for {n_epochs} epochs")
+            if print_stats:
+                print(f"Train on {x_train.shape[0]} samples, validate on {x_val.shape[0]} samples for {n_epochs} epochs")
         elif val_data:
             x_train, y_train = x, y
             x_val, y_val = val_data[0], val_data[1]
-            print(f"Train on {x_train.shape[0]} samples, validate on {x_val.shape[0]} samples for {n_epochs} epochs")
+            if print_stats:
+                print(f"Train on {x_train.shape[0]} samples, validate on {x_val.shape[0]} samples for {n_epochs} epochs")
         else:
             x_train, y_train = x, y
-            print(f"Train on {x_train.shape[0]} samples for {n_epochs} epochs")
-        
-        print("Stats are printed in format train / val")
+            if print_stats:
+                print(f"Train on {x_train.shape[0]} samples for {n_epochs} epochs")
+
+        if print_stats:
+            print("Stats are printed in format train / val")
 
 
         for e in range(n_epochs):
@@ -279,7 +298,7 @@ class network:
 
             # compute metrics for the validation set
             for m in metrics:
-                m_name = m.__class__.__name__
+                m_name = m.name
                 # y_train_int = np.argmax(y_train, axis=1)
                 y_train_int = y_train
                 # y_train_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
@@ -294,7 +313,7 @@ class network:
 
                 # compute metrics for the validation set
                 for m in metrics:
-                    m_name = m.__class__.__name__
+                    m_name = m.name
                     # y_val_int = np.argmax(y_val, axis=1)
                     y_val_int = y_val
                     # y_val_pred_int = np.argmax(self.a[self.n_layers - 1], axis=1)
@@ -310,7 +329,7 @@ class network:
                 else:
                     print(f"epoch {e:>{width}}/{n_epochs}:  loss: {train_loss:.4f}  -  ", end='')
                 for m in metrics:
-                    m_name = m.__class__.__name__
+                    m_name = m.name
                     if val_ratio or val_data:
                         print(f"{m_name}: {history[m_name]['train'][-1]:.4f} / {history[m_name]['val'][-1]:.4f}  -  ", end='')
                     else:
@@ -320,8 +339,61 @@ class network:
             if es_epochs and (val_ratio or val_data) and e >= es_epochs:
                 avg_loss = np.mean(history['loss']['val'][-es_epochs:])
                 if self.prev_avg_loss - avg_loss < 0.0001:
-                    print("early stopping")
+                    if print_stats:
+                        print("early stopping")
                     return history
                 self.prev_avg_loss = avg_loss
 
         return history
+
+
+    def k_fold_cv(self, k, x, y, net_args):
+        """
+        K-fold cross-validation
+
+        Args:
+            net:         The network to test
+            k:           K (default: 5)
+            x, y:        The dataset
+            net_args:    Network parameters
+        
+        Returns:
+            res:   Dict of metrics (averaged)
+
+        """
+
+        scores = {}
+        res = {}
+        for metric in net_args['metrics']:
+            scores[metric.name] = []
+        x_, y_ = shuffle(x, y)
+
+        for i in range(k):
+            chunk_size = x_.shape[0] / k
+            start_idx, end_idx = int(chunk_size * i), min(int(chunk_size * (i+1)), x_.shape[0])
+            
+            # validation
+            x_val, y_val = x_[start_idx:end_idx], y_[start_idx:end_idx]
+            
+            # training
+            x_t1, y_t1 = x_[:start_idx], y_[:start_idx]
+            x_t2, y_t2 = x_[end_idx:], y_[end_idx:]
+            x_train = np.concatenate([x_t1, x_t2])
+            y_train = np.concatenate([y_t1, y_t2])
+
+            # reset the model
+            self._reset_w_b()
+
+            # train the model
+            _ = self.fit(x_train, y_train, val_data=(x_val, y_val), **net_args)
+            
+            # predict on test set
+            y_val_pred = (self.predict(x_val) > 0.5).astype(int)
+
+            for metric in net_args['metrics']:
+                scores[metric.name].append(metric(y_val, y_val_pred))
+
+        for metric in net_args['metrics']:
+            res[metric.name] = np.mean(np.array(scores[metric.name]))
+
+        return res
